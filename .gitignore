@@ -1,0 +1,52 @@
+# Root Gitignore for Research Copilot Workspace
+
+# Environment variables & secrets (CRITICAL)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.production
+backend/.env
+frontend/.env
+
+# Python / Backend
+backend/venv/
+backend/__pycache__/
+backend/agent/__pycache__/
+backend/routers/__pycache__/
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases & local sqlite databases
+backend/copilot.db
+*.db
+*.sqlite3
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+dist/
+
+# Logs & temp files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.eslintcache
+
+# Editor settings & workspace configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
