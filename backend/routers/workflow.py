@@ -77,17 +77,43 @@ def run_workflow_bg(session_id: str):
 
 
 @router.post("/{session_id}/execute")
-def execute_workflow(session_id: str, background_tasks: BackgroundTasks, db=Depends(lambda: mongo_db)):
+def execute_workflow(
+    session_id: str, 
+    background_tasks: BackgroundTasks, 
+    force: bool = False,
+    background: bool = True,
+    db=Depends(lambda: mongo_db)
+):
     db_session = mongo_db.sessions.find_one({"_id": session_id})
     if not db_session:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    if db_session.get("status") in ("in_progress", "completed"):
-        raise HTTPException(status_code=409, detail=f"Session is already {db_session['status']}")
+    current_status = db_session.get("status")
 
-    background_tasks.add_task(run_workflow_bg, session_id)
-    logger.info(f"[workflow] Queued background task for session {session_id}")
-    return {"status": "accepted", "message": "Workflow execution started"}
+    # If not forced, handle duplicate executions or retries gracefully
+    if not force:
+        if current_status == "completed":
+            logger.info(f"[workflow] Execute requested for completed session {session_id}. Returning success.")
+            return {"status": "completed", "message": "Research workflow is already completed."}
+        
+        if current_status == "in_progress":
+            logger.info(f"[workflow] Execute requested for running session {session_id} (possible retry). Returning accepted.")
+            return {"status": "in_progress", "message": "Research workflow is already in progress."}
+
+    # Queue or execute the workflow
+    if background:
+        background_tasks.add_task(run_workflow_bg, session_id)
+        logger.info(f"[workflow] Queued background task for session {session_id}")
+        return {"status": "accepted", "message": "Workflow execution started in background"}
+    else:
+        logger.info(f"[workflow] Running workflow synchronously for session {session_id}")
+        run_workflow_bg(session_id)
+        updated_session = mongo_db.sessions.find_one({"_id": session_id})
+        return {
+            "status": updated_session.get("status", "unknown"),
+            "message": "Workflow execution completed",
+            "current_step": updated_session.get("current_step")
+        }
 
 
 @router.get("/{session_id}/status")
