@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import ChatBox from './ChatBox'
 import { ExternalLink, Database, Search, Loader2, Lock } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { API_BASE_URL } from '../api'
 
 interface SessionData {
   id: string

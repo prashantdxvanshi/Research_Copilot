@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+import { API_BASE_URL } from '../api'
 
 interface CreateSessionFormProps {
   onCreated: (id: string) => void
@@ -25,7 +24,7 @@ export default function CreateSessionForm({ onCreated }: CreateSessionFormProps)
         body: JSON.stringify({ company_name: company, website, objective })
       })
       const data = await res.json()
-      
+      console.log("data is ",data)
       await fetch(`${API_BASE_URL}/workflow/${data.id}/execute`, { method: 'POST' })
       
       onCreated(data.id)
