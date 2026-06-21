@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pymongo
+pydantic
+langgraph
+langchain
+langchain-openai
+langchain-core
+duckduckgo-search
+python-dotenv
