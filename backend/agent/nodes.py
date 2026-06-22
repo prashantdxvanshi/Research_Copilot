@@ -83,52 +83,97 @@ def get_llm():
     return ChatOpenAI(model=model, temperature=0)
 
 
+def _build_field_prompt(pydantic_model) -> str:
+    """
+    Build a concrete example-based JSON prompt from Pydantic field descriptions.
+    Avoids dumping the raw JSON Schema (which confuses small models).
+    """
+    fields = pydantic_model.model_fields
+    lines = ["Fill in the following JSON object with real content. Output ONLY the JSON, no extra text:\n{"]
+    field_items = list(fields.items())
+    for i, (name, field_info) in enumerate(field_items):
+        desc = field_info.description or name
+        comma = "," if i < len(field_items) - 1 else ""
+        lines.append(f'  "{name}": "<{desc}>"{comma}')
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def _is_schema_echo(parsed: dict, pydantic_model) -> bool:
+    """
+    Detect if the model returned the JSON Schema itself instead of filled data.
+    This happens when the parsed JSON contains 'properties' or 'type'=='object'
+    but none of the actual model field names.
+    """
+    model_fields = set(pydantic_model.model_fields.keys())
+    parsed_keys = set(parsed.keys())
+    # If none of the actual field names are present, it's likely a schema echo
+    return len(model_fields & parsed_keys) == 0
+
+
 def invoke_structured(llm, prompt: str, pydantic_model):
     """
     Attempts to get structured output from the LLM using Pydantic.
-    Falls back to normal text completion + manual JSON extraction if it fails.
+    Strategy:
+      1. Try native with_structured_output (best, works on GPT-4 / capable models).
+      2. Fall back to field-by-field example prompt + JSON extraction.
+      3. If the model echoed the schema back, raise a clear error so callers can use their own fallback.
     """
+    # ── Attempt 1: native structured output ──────────────────────────────────
     try:
-        # Try native structured output first
         structured_llm = llm.with_structured_output(pydantic_model)
-        return structured_llm.invoke([HumanMessage(content=prompt)])
+        result = structured_llm.invoke([HumanMessage(content=prompt)])
+        if result is not None:
+            return result
     except Exception as e:
-        logger.warning(f"Native structured output failed, attempting fallback parsing: {e}")
-        
-        # Modify the prompt to strictly request JSON
-        json_prompt = f"""{prompt}
-        
-You MUST respond ONLY with a valid JSON object matching the schema below. Do not include any introductory or concluding text, explanations, or markdown blocks (e.g., do NOT wrap the JSON in ```json).
+        logger.warning(f"Native structured output failed, trying field-prompt fallback: {e}")
 
-JSON Schema:
-{json.dumps(pydantic_model.model_json_schema(), indent=2)}
-"""
-        # Call the LLM directly
+    # ── Attempt 2: field-by-field example prompt (avoids schema confusion) ───
+    field_template = _build_field_prompt(pydantic_model)
+    json_prompt = (
+        f"{prompt}\n\n"
+        "---\n"
+        "Your response must be ONLY a valid JSON object with the exact keys shown below. "
+        "Do NOT output any explanations, markdown code fences, or the schema definition. "
+        "Replace each placeholder with real content based on the context above.\n\n"
+        f"{field_template}"
+    )
+
+    try:
         response = llm.invoke([HumanMessage(content=json_prompt)])
         content = response.content.strip()
-        
-        # Clean up code blocks if the model generated them despite instructions
+
+        # Strip markdown code fences if present
         json_str = content
         if json_str.startswith("```"):
             lines = json_str.splitlines()
-            if lines[0].startswith("```"):
-                lines = lines[1:]
+            # Remove opening fence (```json or ```)
+            lines = lines[1:]
+            # Remove closing fence
             if lines and lines[-1].startswith("```"):
                 lines = lines[:-1]
             json_str = "\n".join(lines).strip()
-            
-        # Try to extract the JSON substring in case of conversational prefix/suffix
+
+        # Extract the JSON object substring
         start = json_str.find('{')
         end = json_str.rfind('}')
         if start != -1 and end != -1 and end > start:
-            json_str = json_str[start:end+1]
-            
-        try:
-            parsed = json.loads(json_str)
-            return pydantic_model.model_validate(parsed)
-        except Exception as json_err:
-            logger.error(f"Fallback JSON parsing failed: {json_err}. Raw content: {content}")
-            raise json_err
+            json_str = json_str[start:end + 1]
+
+        parsed = json.loads(json_str)
+
+        # Guard: if the model echoed the schema itself, reject it
+        if _is_schema_echo(parsed, pydantic_model):
+            raise ValueError(
+                "Model returned the JSON schema definition instead of filled data. "
+                f"Got keys: {list(parsed.keys())}"
+            )
+
+        return pydantic_model.model_validate(parsed)
+
+    except Exception as json_err:
+        logger.error(f"Field-prompt fallback failed: {json_err}. Raw content snippet: {content[:300] if 'content' in dir() else 'N/A'}")
+        raise json_err
 
 
 # ─────────────────────────────────────────────
@@ -144,14 +189,17 @@ def planner_node(state: ResearchState) -> dict:
     update_step(state['session_id'], "Planning search queries")
     llm = get_llm()
 
-    prompt = f"""You are an expert research planner preparing for a business or sales meeting.
-    
+    prompt = f"""You are an expert research planner.
+
 Company Name: {state['company_name']}
 Website: {state['website']}
-Research Objective: {state['objective']}
+Objective: {state['objective']}
 
-Generate exactly 3 specific, actionable search queries that will help gather business intelligence on this company.
-Focus on recent news, products, customers, and competitive landscape."""
+Generate exactly 3 specific search queries for business intelligence on this company.
+Focus on: recent news, products/services, customers, and competitive landscape.
+
+Respond with ONLY a JSON object like this (no other text):
+{{"queries": ["query one here", "query two here", "query three here"]}}"""
 
     try:
         result: SearchQueries = invoke_structured(llm, prompt, SearchQueries)
