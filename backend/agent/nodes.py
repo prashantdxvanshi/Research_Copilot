@@ -1,8 +1,8 @@
 import json
 import os
 import logging
-from typing import List
-from pydantic import BaseModel, Field
+from typing import Any, List, Union
+from pydantic import BaseModel, Field, model_validator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from duckduckgo_search import DDGS
@@ -56,6 +56,32 @@ class ResearchReport(BaseModel):
     suggested_outreach_strategy: str = Field(description="A recommended strategy for outreach or engagement")
     unknowns: str = Field(description="Information that could not be found or gaps in the research")
     sources: str = Field(description="List of sources or search queries that were used for this report")
+
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_lists_to_strings(cls, values: Any) -> Any:
+        """
+        Some LLMs (especially smaller models via Groq/Ollama) return list arrays
+        for fields that are typed as str. This validator runs BEFORE field-level
+        validation and converts any list value to a newline-joined string, so
+        Pydantic never sees a type mismatch.
+        """
+        if not isinstance(values, dict):
+            return values
+        str_fields = {
+            "company_overview", "products_and_services", "target_customers",
+            "business_signals", "risks_and_challenges", "suggested_discovery_questions",
+            "suggested_outreach_strategy", "unknowns", "sources",
+        }
+        for field in str_fields:
+            val = values.get(field)
+            if isinstance(val, list):
+                # Join list items with newlines; skip None/empty entries
+                values[field] = "\n".join(str(item) for item in val if item)
+            elif val is not None and not isinstance(val, str):
+                # Coerce any other non-string (int, bool, etc.) to str
+                values[field] = str(val)
+        return values
 
 
 # ─────────────────────────────────────────────
