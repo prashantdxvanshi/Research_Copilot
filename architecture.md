@@ -55,7 +55,7 @@ The backend is a **Python + FastAPI** application. FastAPI was chosen for its na
 ### Storage (MongoDB)
 **MongoDB** is used for persistence. Two collections are used: `sessions` (stores session metadata, status, and the final JSON report) and `chat_messages` (stores chat history with role and timestamp). MongoDB was chosen over SQL because the report is a variable-schema JSON document — MongoDB's document model stores it natively without serialization overhead. The connection supports both local MongoDB and MongoDB Atlas.
 
-## Data Flow
+## Data Flow..
 
 1. User submits a company name, website, and research objective via the React form.
 2. The frontend calls `POST /sessions/` to create a session record in MongoDB (`status: "created"`).
