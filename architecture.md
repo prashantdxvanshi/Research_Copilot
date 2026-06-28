@@ -52,7 +52,7 @@ The backend is a **Python + FastAPI** application. FastAPI was chosen for its na
 ### LLM (Ollama)
 **Ollama** is used as the local LLM serving layer. The `llama3.2:1b` model is accessed through Ollama's OpenAI-compatible REST API (`/v1/chat/completions`). LangChain's `ChatOpenAI` client is pointed at `http://localhost:11434/v1`, making the integration drop-in replaceable with any other model or cloud provider by simply updating the `.env` file.
 
-### Storage (MongoDB)
+### Storage (MongoDB)..
 **MongoDB** is used for persistence. Two collections are used: `sessions` (stores session metadata, status, and the final JSON report) and `chat_messages` (stores chat history with role and timestamp). MongoDB was chosen over SQL because the report is a variable-schema JSON document — MongoDB's document model stores it natively without serialization overhead. The connection supports both local MongoDB and MongoDB Atlas.
 
 ## Data Flow.
