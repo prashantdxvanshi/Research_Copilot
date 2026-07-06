@@ -67,7 +67,7 @@ The backend is a **Python + FastAPI** application. FastAPI was chosen for its na
 8. The quality check validates that all 9 required sections are populated; on failure it routes back to step 6 (max 2 retries).
 9. On success, the session is updated to `status: "completed"` and the report JSON is saved to MongoDB.
 10. The frontend detects the status change via polling and renders the report sections.
-11. The user can then ask follow-up questions; the chat router uses the stored report as system context for the LLM.
+11. The user can then ask follow-up questions; the chat router uses the stored report as system context for the LLM....
 
 ## Tradeoffs
 
