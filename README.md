@@ -14,7 +14,7 @@ It uses **LangGraph** for the AI workflow, **Python (FastAPI)** for the backend,
 - **ReactJS Frontend** — Responsive, animated UI with session history, workflow progress polling, and follow-up chat
 - **Contextual Chat** — Follow-up Q&A grounded in the generated report
 
-## Getting Started
+## Getting Started....
 
 ### Prerequisites
 
