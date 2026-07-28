@@ -58,7 +58,7 @@ The backend is a **Python + FastAPI** application. FastAPI was chosen for its na
 ## Data Flow
 
 1. User submits a company name, website, and research objective via the React form.
-2. The frontend calls `POST /sessions/` to create a session record in MongoDB (`status: "created"`).
+2. The frontend calls `POST /sessions/` to create a session record in MongoDB (`status: "created"`)
 3. The frontend immediately calls `POST /workflow/{id}/execute`, which queues the LangGraph run as a background task.
 4. The backend updates the session to `status: "in_progress"` and invokes `app_graph.invoke(initial_state)`.
 5. The LangGraph planner generates 3 search queries (structured output via Pydantic `SearchQueries`).
