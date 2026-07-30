@@ -46,7 +46,7 @@ It uses **LangGraph** for the AI workflow, **Python (FastAPI)** for the backend,
    MONGODB_URI=mongodb://localhost:27017
    MONGODB_DB_NAME=research_copilot
    ```
-   > For MongoDB Atlas, replace `MONGODB_URI` with your Atlas connection string.
+   > For MongoDB Atlas, replace `MONGODB_URI` with your Atlas connection string
 
 4. Start the FastAPI server:
    ```bash
