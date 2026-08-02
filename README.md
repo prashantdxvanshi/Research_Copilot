@@ -1,7 +1,7 @@
 # Zylabs AI Research Copilot
 
 A production-grade AI Research Copilot built for the Zylabs Intern AI Engineer Assignment
-It uses **LangGraph** for the AI workflow, **Python (FastAPI)** for the backend, **ReactJS (Vite + TailwindCSS)** for the frontend, **MongoDB** for persistence, and **Ollama** for local LLM inference.
+It uses **LangGraph** for the AI workflow, **Python (FastAPI)** for the backend, **ReactJS (Vite + TailwindCSS)** for the frontend, **MongoDB** for persistence, and **Ollama** for local LLM inference
 
 ## Features
 
