@@ -12,7 +12,7 @@ It uses **LangGraph** for the AI workflow, **Python (FastAPI)** for the backend,
 - **Ollama Integration** — Runs fully locally using `llama3.2:1b` via Ollama's OpenAI-compatible API
 - **FastAPI Backend** — Async endpoints with structured logging, error handling, and background task execution
 - **ReactJS Frontend** — Responsive, animated UI with session history, workflow progress polling, and follow-up chat
-- **Contextual Chat** — Follow-up Q&A grounded in the generated report
+- **Contextual Chat** — Follow-up Q&A grounded in the generated report.
 
 ## Getting Started
 
